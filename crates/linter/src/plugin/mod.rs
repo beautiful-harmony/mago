@@ -8,6 +8,7 @@ pub mod best_practices;
 pub mod comment;
 pub mod consistency;
 pub mod deprecation;
+pub mod doctrine;
 pub mod laravel;
 pub mod maintainability;
 pub mod migration;
@@ -28,6 +29,7 @@ macro_rules! foreach_plugin {
         $do($crate::plugin::comment::CommentPlugin);
         $do($crate::plugin::consistency::ConsistencyPlugin);
         $do($crate::plugin::deprecation::DeprecationPlugin);
+        $do($crate::plugin::doctrine::DoctrinePlugin);
         $do($crate::plugin::laravel::LaravelPlugin);
         $do($crate::plugin::maintainability::MaintainabilityPlugin);
         $do($crate::plugin::migration::MigrationPlugin);
