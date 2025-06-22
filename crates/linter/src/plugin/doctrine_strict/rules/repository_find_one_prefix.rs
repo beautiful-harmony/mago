@@ -18,12 +18,20 @@ impl Rule for RepositoryFindOnePrefixRule {
         RuleDefinition::enabled("RepositoryFindOnePrefix", Level::Warning)
             .with_description(indoc! {"
                 Detects repository methods that return single entities but do not follow the 'findOne' prefix naming convention.
+                
+                This rule identifies Repository classes using the following priority order:
+                1. Interface Implementation (Primary): Checks if class implements ObjectRepository interface
+                2. Inheritance Hierarchy (Secondary): Checks if class extends EntityRepository or similar base classes
+                3. Naming Conventions (Fallback): Uses naming patterns when reflection data is unavailable
+                
                 Methods in Doctrine Repository classes that return a single entity should be prefixed with 'findOne'.
             "})
             .with_example(RuleUsageExample::valid(
-                "Repository method with correct findOne prefix",
+                "Repository method with correct findOne prefix - extends EntityRepository",
                 indoc! {r#"
                     <?php
+
+                    use Doctrine\ORM\EntityRepository;
 
                     class UserRepository extends EntityRepository
                     {
@@ -39,10 +47,34 @@ impl Rule for RepositoryFindOnePrefixRule {
                     }
                 "#},
             ))
-            .with_example(RuleUsageExample::invalid(
-                "Repository method without findOne prefix for single entity return",
+            .with_example(RuleUsageExample::valid(
+                "Repository method with correct findOne prefix - implements ObjectRepository",
                 indoc! {r#"
                     <?php
+
+                    use Doctrine\Persistence\ObjectRepository;
+
+                    class CustomUserRepository implements ObjectRepository
+                    {
+                        public function findOneByEmail(string $email): ?User
+                        {
+                            // Custom implementation
+                            return null;
+                        }
+
+                        public function findOneActiveUser(): ?User
+                        {
+                            return null;
+                        }
+                    }
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "Repository method without findOne prefix - extends EntityRepository",
+                indoc! {r#"
+                    <?php
+
+                    use Doctrine\ORM\EntityRepository;
 
                     class UserRepository extends EntityRepository
                     {
@@ -54,6 +86,29 @@ impl Rule for RepositoryFindOnePrefixRule {
                         public function getUserById(int $id): User
                         {
                             return $this->find($id);
+                        }
+                    }
+                "#},
+            ))
+            .with_example(RuleUsageExample::invalid(
+                "Repository method without findOne prefix - implements ObjectRepository",
+                indoc! {r#"
+                    <?php
+
+                    use Doctrine\Persistence\ObjectRepository;
+
+                    class CustomUserRepository implements ObjectRepository
+                    {
+                        public function fetchUser(string $email): ?User
+                        {
+                            // Should be findOneUser
+                            return null;
+                        }
+
+                        public function retrieveActiveUser(): User
+                        {
+                            // Should be findOneActiveUser
+                            return new User();
                         }
                     }
                 "#},
@@ -99,7 +154,7 @@ impl Rule for RepositoryFindOnePrefixRule {
                         .with_message("Method definition")
                 )
                 .with_note(
-                    "Methods that return single entities should follow the 'findOne' prefix convention for clarity and consistency."
+                    "Methods that return single entities should follow the 'findOne' prefix convention for clarity and consistency. This follows Doctrine ORM best practices where 'findOne' prefix clearly indicates single entity retrieval."
                 )
                 .with_help(format!(
                     "Consider renaming to `findOne{}` to adhere to the naming convention.",
@@ -117,28 +172,93 @@ impl RepositoryFindOnePrefixRule {
         // Check if we're currently in a class-like scope
         if let Some(class_scope) = context.scope.get_class_like_scope() {
             match class_scope {
-                crate::scope::ClassLikeScope::Class(class_id)
-                | crate::scope::ClassLikeScope::Interface(class_id)
-                | crate::scope::ClassLikeScope::Trait(class_id)
-                | crate::scope::ClassLikeScope::Enum(class_id) => {
-                    let class_name = context.lookup(class_id);
-
-                    // Check if class name contains "Repository"
-                    if class_name.contains("Repository") {
-                        return true;
-                    }
+                crate::scope::ClassLikeScope::Class(class_id) => {
+                    // Follow CLAUDE.md design principles: prioritize interface/inheritance detection
+                    // over naming conventions
+                    return self.is_repository_by_reflection(context, class_id)
+                        || self.is_repository_by_naming_fallback(context, class_id);
+                }
+                crate::scope::ClassLikeScope::Interface(_)
+                | crate::scope::ClassLikeScope::Trait(_)
+                | crate::scope::ClassLikeScope::Enum(_) => {
+                    // Interfaces, traits, and enums cannot be repository classes
+                    return false;
                 }
                 crate::scope::ClassLikeScope::AnonymousClass(_) => {
                     // Anonymous classes cannot be repositories
                     return false;
                 }
             }
-
-            // For more sophisticated checking, we would need access to the extends clause
-            // This could be enhanced by checking the reflection information
         }
 
         false
+    }
+
+    /// Primary detection method: Check if class implements ObjectRepository interface
+    /// or extends EntityRepository base class using reflection data
+    fn is_repository_by_reflection(&self, context: &LintContext<'_>, class_id: &mago_interner::StringIdentifier) -> bool {
+        // Get the fully qualified class name for reflection lookup
+        let _class_name = context.lookup(class_id);
+        
+        // Try to get class reflection from the codebase
+        if let Some(class_like_name) = context.codebase.class_like_names.get(&context.interner.lowered(class_id)) {
+            if let Some(class_reflection) = context.codebase.class_like_reflections.get(class_like_name) {
+                // 1. Primary: Check if implements ObjectRepository interface
+                if self.implements_object_repository(&class_reflection.inheritance, context) {
+                    return true;
+                }
+                
+                // 2. Secondary: Check if extends EntityRepository or similar base class
+                if self.extends_repository_class(&class_reflection.inheritance, context) {
+                    return true;
+                }
+            }
+        }
+        
+        false
+    }
+
+    /// Check if the class implements Doctrine\Persistence\ObjectRepository interface
+    fn implements_object_repository(&self, inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection, context: &LintContext<'_>) -> bool {
+        // Look for ObjectRepository interface in implemented interfaces
+        for interface_name in &inheritance.all_implemented_interfaces {
+            let interface_str = context.lookup(&interface_name.value);
+            if interface_str.contains("ObjectRepository") {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Check if the class extends EntityRepository or similar repository base class
+    fn extends_repository_class(&self, inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection, context: &LintContext<'_>) -> bool {
+        // Check direct extended class
+        if let Some(parent_class) = inheritance.direct_extended_class {
+            let parent_str = context.lookup(&parent_class.value);
+            if parent_str.contains("Repository") || parent_str.contains("EntityRepository") {
+                return true;
+            }
+        }
+
+        // Check all extended classes in the hierarchy
+        for extended_class in &inheritance.all_extended_classes {
+            let class_str = context.lookup(&extended_class.value);
+            if class_str.contains("Repository") || class_str.contains("EntityRepository") {
+                return true;
+            }
+        }
+        
+        false
+    }
+
+    /// Fallback detection method: Use naming conventions as last resort
+    /// This is documented as a fallback mechanism per CLAUDE.md principles
+    fn is_repository_by_naming_fallback(&self, context: &LintContext<'_>, class_id: &mago_interner::StringIdentifier) -> bool {
+        let class_name = context.lookup(class_id);
+        
+        // Fallback: Check if class name contains "Repository"
+        // This is less reliable but used when reflection data is unavailable
+        class_name.contains("Repository")
     }
 
     fn is_standard_doctrine_method(&self, method_name: &str) -> bool {
