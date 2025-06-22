@@ -3,7 +3,7 @@ pub mod best_practices;
 pub mod comment;
 pub mod consistency;
 pub mod deprecation;
-pub mod doctrine;
+pub mod doctrine_strict;
 pub mod laravel;
 pub mod maintainability;
 pub mod migration;

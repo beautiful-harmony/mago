@@ -1,5 +1,5 @@
 use crate::definition::PluginDefinition;
-use crate::plugin::doctrine::rules::repository_find_one_prefix::RepositoryFindOnePrefixRule;
+use crate::plugin::doctrine_strict::rules::repository_find_one_prefix::RepositoryFindOnePrefixRule;
 
 use crate::plugin::Plugin;
 use crate::rule::Rule;
@@ -7,13 +7,13 @@ use crate::rule::Rule;
 pub mod rules;
 
 #[derive(Debug)]
-pub struct DoctrinePlugin;
+pub struct DoctrineStrictPlugin;
 
-impl Plugin for DoctrinePlugin {
+impl Plugin for DoctrineStrictPlugin {
     fn get_definition(&self) -> PluginDefinition {
         PluginDefinition {
-            name: "Doctrine",
-            description: "Provides rules that enforce best practices for Doctrine ORM usage.",
+            name: "DoctrineStrict",
+            description: "Provides strict rules for Doctrine ORM usage and best practices.",
             enabled_by_default: false,
         }
     }
