@@ -72,10 +72,11 @@ Mago is structured as a Rust workspace with multiple crates organized by functio
 
 ### Linter Plugin Architecture
 The linter uses a plugin-based architecture where:
-- Plugins are organized by category (best-practices, safety, strictness, etc.)
-- Each plugin contains multiple rules
+- Plugins are organized by category (best-practices, safety, strictness, doctrine-strict, etc.)
+- Each plugin contains multiple rules that share common functionality or domain focus
 - Rules can be individually configured with thresholds and severity levels
-- Framework-specific plugins available (symfony, laravel, phpunit)
+- Framework-specific plugins available (symfony, laravel, phpunit, doctrine-strict)
+- Plugin naming follows kebab-case for compound names (e.g., `doctrine-strict`, `best-practices`)
 
 ### Threading Model
 - Configurable thread count via `threads` setting or `--threads` CLI option
@@ -103,6 +104,8 @@ The linter uses a plugin-based architecture where:
 ### Testing Strategy
 - Unit tests in each crate under `tests/` directories
 - Integration tests for CLI commands
+- Linter rules use the `rule_test!` macro with example-based testing
+- Rule examples include both valid and invalid code snippets with expected behavior
 - Formatter has extensive test cases in `crates/formatter/tests/cases/`
 - Test cases follow before/after pattern with settings files
 
@@ -117,8 +120,37 @@ The linter uses a plugin-based architecture where:
 - Clippy lints enforced with warnings as errors
 - `print_stdout`, `print_stderr`, `dbg_macro` are forbidden
 - Uses workspace-level lint configuration
+- Trailing whitespace is not allowed
+- Files must end with a single newline
+
+### Linter Rule Development
+When creating new linter rules:
+- Implement the `Rule` trait with `get_definition()` and `lint_node()` methods
+- Use `RuleDefinition::enabled()` with appropriate severity level
+- Provide comprehensive examples using `RuleUsageExample::valid()` and `RuleUsageExample::invalid()`
+- Include clear descriptions and helpful error messages
+- Prefer interface/inheritance-based detection over naming conventions
+- Use `context.scope` to access current scope information
+- Leverage `mago-reflection` for type hierarchy analysis
 
 ### Release Process
 - Publishing order is critical due to crate dependencies
 - `just publish` handles correct dependency order
 - Version synchronization across workspace members
+
+## Design Principles
+
+### Type and Interface Detection
+When implementing linter rules that need to determine class types or architectural layers (such as identifying Repository classes), follow this priority order:
+
+1. **Interface Implementation (Primary)**: Prioritize checking if a class implements specific interfaces rather than relying on naming conventions
+2. **Inheritance Hierarchy (Secondary)**: Check if a class extends known base classes or abstract classes
+3. **Naming Conventions (Fallback)**: Use naming patterns as a last resort when interface/inheritance information is unavailable
+
+**Rationale**: Interface-based detection is more reliable and follows SOLID principles, as it relies on actual contracts rather than naming conventions which can be inconsistent or misleading.
+
+**Implementation Notes**:
+- Use `mago-reflection` to access type hierarchy information
+- Leverage the codebase reflection system to determine implemented interfaces
+- Fall back to naming patterns only when reflection data is insufficient
+- Document any naming-based heuristics clearly as fallback mechanisms
