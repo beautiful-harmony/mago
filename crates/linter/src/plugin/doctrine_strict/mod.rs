@@ -1,4 +1,5 @@
 use crate::definition::PluginDefinition;
+use crate::plugin::doctrine_strict::rules::begin_transaction_outside_try::BeginTransactionOutsideTryRule;
 use crate::plugin::doctrine_strict::rules::repository_find_one_prefix::RepositoryFindOnePrefixRule;
 
 use crate::plugin::Plugin;
@@ -19,6 +20,6 @@ impl Plugin for DoctrineStrictPlugin {
     }
 
     fn get_rules(&self) -> Vec<Box<dyn Rule>> {
-        vec![Box::new(RepositoryFindOnePrefixRule)]
+        vec![Box::new(BeginTransactionOutsideTryRule), Box::new(RepositoryFindOnePrefixRule)]
     }
 }

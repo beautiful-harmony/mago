@@ -196,10 +196,14 @@ impl RepositoryFindOnePrefixRule {
 
     /// Primary detection method: Check if class implements ObjectRepository interface
     /// or extends EntityRepository base class using reflection data
-    fn is_repository_by_reflection(&self, context: &LintContext<'_>, class_id: &mago_interner::StringIdentifier) -> bool {
+    fn is_repository_by_reflection(
+        &self,
+        context: &LintContext<'_>,
+        class_id: &mago_interner::StringIdentifier,
+    ) -> bool {
         // Get the fully qualified class name for reflection lookup
         let _class_name = context.lookup(class_id);
-        
+
         // Try to get class reflection from the codebase
         if let Some(class_like_name) = context.codebase.class_like_names.get(&context.interner.lowered(class_id)) {
             if let Some(class_reflection) = context.codebase.class_like_reflections.get(class_like_name) {
@@ -207,19 +211,23 @@ impl RepositoryFindOnePrefixRule {
                 if self.implements_object_repository(&class_reflection.inheritance, context) {
                     return true;
                 }
-                
+
                 // 2. Secondary: Check if extends EntityRepository or similar base class
                 if self.extends_repository_class(&class_reflection.inheritance, context) {
                     return true;
                 }
             }
         }
-        
+
         false
     }
 
     /// Check if the class implements Doctrine\Persistence\ObjectRepository interface
-    fn implements_object_repository(&self, inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection, context: &LintContext<'_>) -> bool {
+    fn implements_object_repository(
+        &self,
+        inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection,
+        context: &LintContext<'_>,
+    ) -> bool {
         // Look for ObjectRepository interface in implemented interfaces
         for interface_name in &inheritance.all_implemented_interfaces {
             let interface_str = context.lookup(&interface_name.value);
@@ -231,7 +239,11 @@ impl RepositoryFindOnePrefixRule {
     }
 
     /// Check if the class extends EntityRepository or similar repository base class
-    fn extends_repository_class(&self, inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection, context: &LintContext<'_>) -> bool {
+    fn extends_repository_class(
+        &self,
+        inheritance: &mago_reflection::class_like::inheritance::InheritanceReflection,
+        context: &LintContext<'_>,
+    ) -> bool {
         // Check direct extended class
         if let Some(parent_class) = inheritance.direct_extended_class {
             let parent_str = context.lookup(&parent_class.value);
@@ -247,15 +259,19 @@ impl RepositoryFindOnePrefixRule {
                 return true;
             }
         }
-        
+
         false
     }
 
     /// Fallback detection method: Use naming conventions as last resort
     /// This is documented as a fallback mechanism per CLAUDE.md principles
-    fn is_repository_by_naming_fallback(&self, context: &LintContext<'_>, class_id: &mago_interner::StringIdentifier) -> bool {
+    fn is_repository_by_naming_fallback(
+        &self,
+        context: &LintContext<'_>,
+        class_id: &mago_interner::StringIdentifier,
+    ) -> bool {
         let class_name = context.lookup(class_id);
-        
+
         // Fallback: Check if class name contains "Repository"
         // This is less reliable but used when reflection data is unavailable
         class_name.contains("Repository")
