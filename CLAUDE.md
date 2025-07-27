@@ -154,3 +154,92 @@ When implementing linter rules that need to determine class types or architectur
 - Leverage the codebase reflection system to determine implemented interfaces
 - Fall back to naming patterns only when reflection data is insufficient
 - Document any naming-based heuristics clearly as fallback mechanisms
+
+### Method Call Validation
+**CRITICAL REQUIREMENT**: Method call validation must be based **solely** on whether the instance implements the target interface, not on naming conventions or other heuristics.
+
+**Implementation Pattern**:
+```rust
+fn is_target_instance(expression: &Expression, context: &LintContext) -> bool {
+    // 1. Primary: Try to resolve expression type through reflection
+    if let Some(expression_type) = resolve_expression_type(expression, context) {
+        return implements_target_interface(&expression_type, context);
+    }
+    
+    // 2. Fallback: Use heuristic-based detection only when type information is unavailable
+    fallback_detection(expression, context)
+}
+
+fn resolve_expression_type(expression: &Expression, context: &LintContext) -> Option<String> {
+    match expression {
+        Expression::Variable(var) => {
+            // Resolve variable type from current scope or type annotations
+            None // Implement proper type resolution
+        }
+        Expression::Access(Access::Property(prop_access)) => {
+            // Resolve property type from class reflection
+            None // Implement proper type resolution
+        }
+        Expression::Call(Call::Method(method_call)) => {
+            // Resolve return type of method call
+            if let ClassLikeMemberSelector::Identifier(method_name) = &method_call.method {
+                let method_name_str = context.lookup(&method_name.value);
+                if is_known_factory_method(method_name_str) {
+                    Some("Target\\Interface\\Type".to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        _ => None,
+    }
+}
+
+fn implements_target_interface(type_name: &str, context: &LintContext) -> bool {
+    // Check if the type implements the target interface
+    type_name.contains("TargetInterface") || 
+    type_name.contains("TargetClass") ||
+    type_name.ends_with("\\TargetClass")
+}
+
+fn fallback_detection(expression: &Expression, context: &LintContext) -> bool {
+    // Fallback heuristic-based detection when type information is unavailable
+    // This should be clearly documented as a fallback mechanism
+    match expression {
+        Expression::Call(Call::Method(method_call)) => {
+            // Check for known factory methods that return target instances
+            if let ClassLikeMemberSelector::Identifier(method_name) = &method_call.method {
+                let method_name_str = context.lookup(&method_name.value);
+                is_known_factory_method(method_name_str)
+            } else {
+                false
+            }
+        }
+        Expression::Variable(var) => {
+            // Fallback: Check for variables with clear naming patterns
+            // This is less reliable but necessary when reflection data is insufficient
+            if let Variable::Direct(direct) = var {
+                let var_name = context.lookup(&direct.name);
+                var_name.contains("target_pattern")
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+```
+
+**Key Requirements**:
+- **Interface-First**: Always attempt to resolve the actual type/interface of an instance before falling back to heuristics
+- **Clear Separation**: Separate type-based detection from fallback heuristics in distinct functions
+- **Explicit Documentation**: Document fallback mechanisms as less reliable alternatives
+- **Type Resolution**: Implement proper type resolution using `mago-reflection` and scope information
+- **Factory Method Recognition**: Recognize well-known factory methods that return specific interface implementations
+
+**Examples of Correct Implementation**:
+- `EntityManager` detection: Check if instance implements `EntityManagerInterface` before checking variable names
+- `Repository` detection: Check if class implements `ObjectRepository` before checking class name patterns
+- Service detection: Check if instance implements specific service interfaces before checking naming conventions
