@@ -1,102 +1,150 @@
-# CLAUDE.md
+# Claude Code Spec-Driven Development
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This project implements Kiro-style Spec-Driven Development for Claude Code using hooks and slash commands.
 
-## Project Overview
+## Project Context
 
-Mago is a comprehensive PHP toolchain written in Rust, inspired by the Rust ecosystem. It provides linting, formatting, static analysis, AST parsing, and reference finding capabilities for PHP projects. The project follows a modular workspace architecture with multiple crates.
+### Project Steering
+- Product overview: `.kiro/steering/product.md`
+- Technology stack: `.kiro/steering/tech.md`
+- Project structure: `.kiro/steering/structure.md`
+- Custom steering docs for specialized contexts
 
-## Development Commands
+### Active Specifications
+- Current spec: Check `.kiro/specs/` for active specifications
+- Use `/kiro:spec-status [feature-name]` to check progress
 
-### Building
-- `just build` - Build the library in release mode
-- `cargo build` - Build in debug mode
-- `just build-wasm` - Build the WebAssembly module (in crates/wasm)
+## Development Guidelines
+- Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
 
-### Testing
-- `just test` - Run all tests in the workspace
-- `cargo test --workspace --locked --all-targets` - Equivalent test command
-- `cargo test -p <crate-name>` - Run tests for a specific crate
+## Spec-Driven Development Workflow
 
-### Linting and Formatting
-- `just lint` - Run comprehensive linting (rustfmt, clippy, cargo check)
-- `just fix` - Automatically fix linting issues
-- `cargo +nightly fmt --all -- --unstable-features` - Format code
-- `cargo +nightly clippy --workspace --all-targets --all-features -- -D warnings` - Run clippy
+### Phase 0: Steering Generation (Recommended)
 
-### Cleaning
-- `just clean` - Clean all build artifacts
+#### Kiro Steering (`.kiro/steering/`)
+```
+/kiro:steering               # Intelligently create or update steering documents
+/kiro:steering-custom        # Create custom steering for specialized contexts
+```
 
-## Architecture
+**Steering Management:**
+- **`/kiro:steering`**: Unified command that intelligently detects existing files and handles them appropriately. Creates new files if needed, updates existing ones while preserving user customizations.
 
-### Workspace Structure
-The project uses a Cargo workspace with crates organized under `/crates/`:
+**Note**: For new features or empty projects, steering is recommended but not required. You can proceed directly to spec-requirements if needed.
 
-**Core Infrastructure:**
-- `syntax-core` - Core parsing utilities and macros
-- `syntax` - PHP syntax parsing, lexing, and AST generation
-- `interner` - String interning for memory efficiency
-- `source` - Source code handling and management
-- `span` - Source location tracking
-- `reporting` - Error and diagnostic reporting
+### Phase 1: Specification Creation
+```
+/kiro:spec-init [feature-name]           # Initialize spec structure only
+/kiro:spec-requirements [feature-name]   # Generate requirements → Review → Edit if needed
+/kiro:spec-design [feature-name]         # Generate technical design → Review → Edit if needed
+/kiro:spec-tasks [feature-name]          # Generate implementation tasks → Review → Edit if needed
+```
 
-**Analysis Components:**
-- `analyzer` - Static analysis engine with type checking and flow analysis
-- `codex` - Symbol table and metadata management
-- `linter` - Pluggable linting system with rule engine
-- `formatter` - Code formatting with configurable style options
-- `reference` - Symbol reference finding and resolution
-- `names` - Name resolution and scope handling
-- `semantics` - Semantic analysis utilities
+### Phase 2: Progress Tracking
+```
+/kiro:spec-status [feature-name]         # Check current progress and phases
+```
 
-**Specialized Modules:**
-- `type-syntax` - Type annotation parsing and handling
-- `docblock` - PHPDoc comment parsing
-- `php-version` - PHP version compatibility handling
-- `composer` - Composer.json schema and dependency handling
-- `fixer` - Automated code fixes
-- `casing` - String case conversion utilities
-- `algebra` - Logic and constraint solving
-- `wasm` - WebAssembly bindings
+## Spec-Driven Development Workflow
 
-### Main Application
-The main CLI application is in `/src/` with:
-- `commands/` - CLI command implementations (lint, format, analyze, ast, find, init, self-update)
-- `config/` - Configuration management for different components
-- `utils/` - Shared utilities (logging, progress, version management)
+Kiro's spec-driven development follows a strict **3-phase approval workflow**:
 
-### Key Design Patterns
-- Modular crate architecture with clear separation of concerns
-- Async/await with Tokio runtime for concurrent file processing
-- Plugin system for linter rules and extensibility
-- Configurable multi-threading support
-- Comprehensive error handling with custom error types
+### Phase 1: Requirements Generation & Approval
+1. **Generate**: `/kiro:spec-requirements [feature-name]` - Generate requirements document
+2. **Review**: Human reviews `requirements.md` and edits if needed
+3. **Approve**: See Phase 2 for streamlined approval
 
-## Configuration
+### Phase 2: Design Generation & Approval
+1. **Generate**: `/kiro:spec-design [feature-name]` - Interactive approval prompt appears
+2. **Review confirmation**: "requirements.mdをレビューしましたか？ [y/N]"
+3. **Approve**: Reply 'y' to approve and proceed, or manually update `spec.json`
 
-### Project Configuration
-- `mago.toml` - Main configuration file (see example in repository root)
-- Supports PHP version specification, source paths, linter plugins, and rule customization
-- Environment variables: `MAGO_PHP_VERSION`, `MAGO_THREADS`, `MAGO_ALLOW_UNSUPPORTED_PHP_VERSION`
+### Phase 3: Tasks Generation & Approval
+1. **Generate**: `/kiro:spec-tasks [feature-name]` - Interactive approval prompts appear
+2. **Review confirmation**: Confirms both requirements and design have been reviewed
+3. **Approve**: Reply 'y' to approve all phases, or manually update `spec.json`
 
-### Development Requirements
-- Rust 1.88.0+ (specified in Cargo.toml)
-- Just task runner for development commands
-- Nightly Rust toolchain for formatting and clippy
+### Implementation
+Only after all three phases are approved can implementation begin.
 
-## Testing Strategy
-- Unit tests within each crate
-- Integration tests in `/tests/` directories
-- Formatter has extensive test cases with before/after examples
-- Property-based testing where applicable
+**Key Principle**: Each phase requires explicit human approval before proceeding to the next phase, ensuring quality and accuracy throughout the development process.
 
-## Performance Considerations
-- Multi-threaded processing with configurable thread count
-- String interning to reduce memory usage
-- Optimized release builds with LTO and single codegen unit
-- Custom allocator (mimalloc) on supported platforms
+## Development Rules
 
-## PHP Compatibility
-- Supports PHP 8.1+ (configurable minimum/maximum versions)
-- Includes comprehensive PHP stubs in `/stubs/` directory
-- Handles PHP-specific syntax and semantics accurately
+1. **Consider steering**: Run `/kiro:steering` before major development (optional for new features)
+2. **Follow the 3-phase approval workflow**: Requirements → Design → Tasks → Implementation
+3. **Approval required**: Each phase requires human review (interactive prompt or manual)
+4. **No skipping phases**: Design requires approved requirements; Tasks require approved design
+5. **Update task status**: Mark tasks as completed when working on them
+6. **Keep steering current**: Run `/kiro:steering` after significant changes
+7. **Check spec compliance**: Use `/kiro:spec-status` to verify alignment
+
+## Automation
+
+This project uses Claude Code hooks to:
+- Automatically track task progress in tasks.md
+- Check spec compliance
+- Preserve context during compaction
+- Detect steering drift
+
+### Task Progress Tracking
+
+When working on implementation:
+1. **Manual tracking**: Update tasks.md checkboxes manually as you complete tasks
+2. **Progress monitoring**: Use `/kiro:spec-status` to view current completion status
+3. **TodoWrite integration**: Use TodoWrite tool to track active work items
+4. **Status visibility**: Checkbox parsing shows completion percentage
+
+## Getting Started
+
+1. Initialize steering documents: `/kiro:steering`
+2. Create your first spec: `/kiro:spec-init [your-feature-name]`
+3. Follow the workflow through requirements, design, and tasks
+
+## Kiro Steering Details
+
+Kiro-style steering provides persistent project knowledge through markdown files:
+
+### Core Steering Documents
+- **product.md**: Product overview, features, use cases, value proposition
+- **tech.md**: Architecture, tech stack, dev environment, commands, ports
+- **structure.md**: Directory organization, code patterns, naming conventions
+
+### Custom Steering
+Create specialized steering documents for:
+- API standards
+- Testing approaches
+- Code style guidelines
+- Security policies
+- Database conventions
+- Performance standards
+- Deployment workflows
+
+### Inclusion Modes
+- **Always Included**: Loaded in every interaction (default)
+- **Conditional**: Loaded for specific file patterns (e.g., `"*.test.js"`)
+- **Manual**: Loaded on-demand with `#filename` reference
+
+## Kiro Steering Configuration
+
+### Current Steering Files
+The `/kiro:steering` command manages these files automatically. Manual updates to this section reflect changes made through steering commands.
+
+### Active Steering Files
+- `product.md`: Always included - Product context and business objectives ✅ Created
+- `tech.md`: Always included - Technology stack and architectural decisions ✅ Created 
+- `structure.md`: Always included - File organization and code patterns ✅ Created
+
+### Custom Steering Files
+<!-- Added by /kiro:steering-custom command -->
+<!-- Example entries:
+- `api-standards.md`: Conditional - `"src/api/**/*"`, `"**/*api*"` - API design guidelines
+- `testing-approach.md`: Conditional - `"**/*.test.*"`, `"**/spec/**/*"` - Testing conventions
+- `security-policies.md`: Manual - Security review guidelines (reference with @security-policies.md)
+-->
+
+### Usage Notes
+- **Always files**: Automatically loaded in every interaction
+- **Conditional files**: Loaded when working on matching file patterns
+- **Manual files**: Reference explicitly with `@filename.md` syntax when needed
+- **Updating**: Use `/kiro:steering` or `/kiro:steering-custom` commands to modify this configuration
