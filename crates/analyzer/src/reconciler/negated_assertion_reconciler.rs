@@ -378,15 +378,6 @@ fn handle_literal_negated_equality(
 
                 acceptable_types.push(existing_atomic_type);
             }
-            TAtomic::Scalar(TScalar::Number) => {
-                if let TAtomic::Scalar(scalar) = assertion_type
-                    && (scalar.is_literal_int() || scalar.is_literal_float())
-                {
-                    did_remove_type = true;
-                }
-
-                acceptable_types.push(existing_atomic_type);
-            }
             _ => {
                 acceptable_types.push(existing_atomic_type);
             }

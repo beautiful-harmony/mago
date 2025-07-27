@@ -307,11 +307,6 @@ pub fn get_null() -> TUnion {
 }
 
 #[inline]
-pub fn get_num() -> TUnion {
-    wrap_atomic(TAtomic::Scalar(TScalar::Number))
-}
-
-#[inline]
 pub fn get_arraykey() -> TUnion {
     wrap_atomic(TAtomic::Scalar(TScalar::ArrayKey))
 }

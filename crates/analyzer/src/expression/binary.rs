@@ -2495,7 +2495,7 @@ fn determine_numeric_result(op: &BinaryOperator, left: &TAtomic, right: &TAtomic
     {
         return match (left, right) {
             (TAtomic::Scalar(TScalar::Integer(_)), TAtomic::Scalar(TScalar::Integer(_))) => match op {
-                BinaryOperator::Division(_) => vec![TAtomic::Scalar(TScalar::Number)],
+                BinaryOperator::Division(_) => vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::float())],
                 _ => vec![TAtomic::Scalar(TScalar::int())],
             },
             _ => match op {
@@ -2515,7 +2515,11 @@ fn determine_numeric_result(op: &BinaryOperator, left: &TAtomic, right: &TAtomic
                 }
                 None => {
                     if matches!(op, BinaryOperator::Division(_)) {
-                        if right_int.is_zero() { vec![TAtomic::Never] } else { vec![TAtomic::Scalar(TScalar::Number)] }
+                        if right_int.is_zero() {
+                            vec![TAtomic::Never]
+                        } else {
+                            vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::float())]
+                        }
                     } else {
                         vec![TAtomic::Scalar(TScalar::int())]
                     }
@@ -2531,8 +2535,9 @@ fn determine_numeric_result(op: &BinaryOperator, left: &TAtomic, right: &TAtomic
         }
         _ => match op {
             BinaryOperator::Modulo(_) => vec![TAtomic::Scalar(TScalar::int())],
-            BinaryOperator::Division(_) => vec![TAtomic::Scalar(TScalar::Number)],
-            _ => vec![TAtomic::Scalar(TScalar::Number)],
+            _ => {
+                vec![TAtomic::Scalar(TScalar::int()), TAtomic::Scalar(TScalar::float())]
+            }
         },
     }
 }

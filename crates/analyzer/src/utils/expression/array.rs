@@ -892,7 +892,7 @@ pub(crate) fn handle_array_access_on_named_object<'a>(
     }
 
     // TODO: we should analyze calls to `offsetSet` and `offsetGet` here.
-    let Some((_array_access_classes, expected_key_type, resulting_value_type)) =
+    let Some((_array_access_classes, expected_key_type, mut resulting_value_type)) =
         get_array_access_classes(context, named_object)
     else {
         context.buffer.report(
@@ -927,6 +927,7 @@ pub(crate) fn handle_array_access_on_named_object<'a>(
         expected_index_types.push(expected_key_type);
     }
 
+    resulting_value_type.possibly_undefined = true;
     resulting_value_type
 }
 

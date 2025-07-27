@@ -913,19 +913,6 @@ fn scrape_type_properties(
         return;
     }
 
-    if let TAtomic::Scalar(TScalar::Number) = atomic {
-        if combination.value_types.contains_key("scalar") {
-            return;
-        }
-
-        combination.integers = HashSet::default();
-        combination.literal_floats = HashSet::default();
-        combination.value_types.retain(|k, _| k != "float");
-
-        combination.value_types.insert(atomic.get_id(None), atomic);
-        return;
-    }
-
     if let TAtomic::Scalar(TScalar::String(_) | TScalar::Integer(_)) = atomic
         && (combination.value_types.contains_key("arraykey") || combination.value_types.contains_key("scalar"))
     {

@@ -66,17 +66,6 @@ pub(crate) fn reconcile(
                     assertion.has_equality(),
                 ));
             }
-            TAtomic::Scalar(TScalar::Number) => {
-                return Some(subtract_num(
-                    context,
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                ));
-            }
             TAtomic::Scalar(TScalar::Float(TFloat { value: None })) => {
                 return Some(subtract_float(
                     context,
@@ -581,14 +570,6 @@ fn subtract_int(
             } else {
                 acceptable_types.push(atomic);
             }
-        } else if let TAtomic::Scalar(TScalar::Number) = atomic {
-            did_remove_type = true;
-
-            if !is_equality {
-                acceptable_types.push(TAtomic::Scalar(TScalar::float()));
-            } else {
-                acceptable_types.push(atomic);
-            }
         } else if let TAtomic::Scalar(TScalar::Integer(existing_integer)) = atomic {
             did_remove_type = true;
 
@@ -673,14 +654,6 @@ fn subtract_float(
             }
 
             did_remove_type = true;
-        } else if let TAtomic::Scalar(TScalar::Number) = atomic {
-            if !is_equality {
-                acceptable_types.push(TAtomic::Scalar(TScalar::int()));
-            } else {
-                acceptable_types.push(atomic);
-            }
-
-            did_remove_type = true;
         } else if let TAtomic::Scalar(TScalar::Float(_)) = atomic {
             did_remove_type = true;
 
@@ -704,85 +677,6 @@ fn subtract_float(
         true,
         new_var_type,
     )
-}
-
-fn subtract_num(
-    context: &mut ReconcilationContext<'_>,
-    assertion: &Assertion,
-    existing_var_type: &TUnion,
-    key: Option<&String>,
-    negated: bool,
-    span: Option<&Span>,
-    is_equality: bool,
-) -> TUnion {
-    if existing_var_type.is_mixed() {
-        return existing_var_type.clone();
-    }
-
-    let old_var_type_string = existing_var_type.get_id(Some(context.interner));
-
-    let mut did_remove_type = false;
-
-    let existing_var_types = &existing_var_type.types;
-    let mut existing_var_type = existing_var_type.clone();
-
-    for atomic in existing_var_types {
-        if let TAtomic::GenericParameter(TGenericParameter { constraint, .. }) = atomic {
-            if !is_equality && !constraint.is_mixed() {
-                let atomic = atomic.replace_template_constraint(subtract_num(
-                    context,
-                    assertion,
-                    constraint,
-                    None,
-                    false,
-                    None,
-                    is_equality,
-                ));
-
-                existing_var_type.remove_type(&atomic);
-                existing_var_type.types.push(atomic);
-            }
-
-            did_remove_type = true;
-        } else if let TAtomic::Scalar(TScalar::Generic) = atomic {
-            if !is_equality {
-                existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::string()));
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::bool()));
-            }
-
-            did_remove_type = true;
-        } else if let TAtomic::Scalar(TScalar::ArrayKey) = atomic {
-            if !is_equality {
-                existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::string()));
-            }
-
-            did_remove_type = true;
-        } else if let TAtomic::Scalar(TScalar::Integer(_))
-        | TAtomic::Scalar(TScalar::Float(_))
-        | TAtomic::Scalar(TScalar::Number) = atomic
-        {
-            did_remove_type = true;
-
-            if !is_equality {
-                existing_var_type.remove_type(atomic);
-            }
-        }
-    }
-
-    if (existing_var_type.types.is_empty() || !did_remove_type)
-        && let Some(key) = key
-        && let Some(pos) = span
-    {
-        trigger_issue_for_impossible(context, &old_var_type_string, key, assertion, !did_remove_type, negated, pos);
-    }
-
-    if existing_var_type.types.is_empty() {
-        return get_never();
-    }
-
-    existing_var_type
 }
 
 fn subtract_arraykey(
@@ -826,13 +720,6 @@ fn subtract_arraykey(
                 existing_var_type.remove_type(atomic);
                 existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
                 existing_var_type.types.push(TAtomic::Scalar(TScalar::bool()));
-            }
-
-            did_remove_type = true;
-        } else if let TAtomic::Scalar(TScalar::Number) = atomic {
-            if !is_equality {
-                existing_var_type.remove_type(atomic);
-                existing_var_type.types.push(TAtomic::Scalar(TScalar::float()));
             }
 
             did_remove_type = true;

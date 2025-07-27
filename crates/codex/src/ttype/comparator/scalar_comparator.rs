@@ -19,20 +19,13 @@ pub fn is_contained_by(
         (TAtomic::Null, TAtomic::Null) => return true,
         (
             TAtomic::Scalar(TScalar::Numeric),
-            TAtomic::Scalar(TScalar::Number | TScalar::Integer(_) | TScalar::Float(_) | TScalar::Numeric),
+            TAtomic::Scalar(TScalar::Integer(_) | TScalar::Float(_) | TScalar::Numeric),
         ) => return true,
         (TAtomic::Scalar(TScalar::Numeric), TAtomic::Scalar(TScalar::String(string))) if string.is_numeric => {
             return true;
         }
         (TAtomic::Scalar(TScalar::Generic), TAtomic::Scalar(_)) => return true,
-        (TAtomic::Scalar(TScalar::ArrayKey), TAtomic::Scalar(TScalar::ArrayKey)) => return true,
         (TAtomic::Scalar(TScalar::ArrayKey), TAtomic::Scalar(i)) if i.is_int() || i.is_any_string() => {
-            return true;
-        }
-        (
-            TAtomic::Scalar(TScalar::Number),
-            TAtomic::Scalar(TScalar::Number | TScalar::Integer(_) | TScalar::Float(_)),
-        ) => {
             return true;
         }
         (TAtomic::Scalar(TScalar::Integer(ci)), TAtomic::Scalar(TScalar::Integer(ii))) if ci.contains(*ii) => {

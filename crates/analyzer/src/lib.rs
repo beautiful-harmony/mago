@@ -354,23 +354,6 @@ mod tests {
             <?php
 
             /**
-             * Returns the largest element of the given list, or null if the
-             * list is empty.
-             *
-             * @template T of int|float
-             *
-             * @param list<T> $numbers
-             *
-             * @return ($numbers is non-empty-list<T> ? T : null)
-             *
-             * @pure
-             */
-            function max_value(array $numbers): null|int|float
-            {
-                return max_value($numbers);
-            }
-
-            /**
              * @template K of array-key
              * @template V
              *
@@ -557,6 +540,23 @@ mod tests {
             interface Countable
             {
                 public function count(): int;
+            }
+
+            /**
+             * Returns the largest element of the given list, or null if the
+             * list is empty.
+             *
+             * @template T of int|float
+             *
+             * @param list<T> $numbers
+             *
+             * @return ($numbers is non-empty-list<T> ? T : null)
+             *
+             * @pure
+             */
+            function max_value(array $numbers): null|int|float
+            {
+                return max_value($numbers);
             }
 
             /**

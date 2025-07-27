@@ -28,8 +28,6 @@ pub mod string;
 pub enum TScalar {
     /// Represents the top type `scalar`, encompassing all other scalar variants.
     Generic,
-    /// Represents the union type `num` (`int` | `float`).
-    Number,
     /// Represents the union type `numeric` (`int` | `float` | `string` that is numeric).
     Numeric,
     /// Represents the union type `array-key` (`int` | `string`).
@@ -61,12 +59,6 @@ impl TScalar {
     #[inline]
     pub const fn generic() -> Self {
         TScalar::Generic
-    }
-
-    /// Creates the `num` (`int` | `float`) type.
-    #[inline]
-    pub const fn num() -> Self {
-        TScalar::Number
     }
 
     /// Creates the `numeric` (`int` | `float` | `string` that is numeric) type.
@@ -195,12 +187,6 @@ impl TScalar {
         matches!(self, TScalar::Generic)
     }
 
-    /// Checks if this is the `num` type (`int` | `float`).
-    #[inline]
-    pub const fn is_num(&self) -> bool {
-        matches!(self, TScalar::Number)
-    }
-
     /// Checks if this is the `array-key` type (`int` | `string`).
     #[inline]
     pub const fn is_array_key(&self) -> bool {
@@ -266,7 +252,7 @@ impl TScalar {
     pub const fn is_numeric(&self) -> bool {
         match self {
             TScalar::Numeric => true,
-            TScalar::Integer(_) | TScalar::Float(_) | TScalar::Number => true,
+            TScalar::Integer(_) | TScalar::Float(_) => true,
             TScalar::String(str) => str.is_numeric,
             _ => false,
         }
@@ -275,7 +261,7 @@ impl TScalar {
     /// Checks if this is any kind of number type (`int`, `float`, or `num`).
     #[inline]
     pub const fn is_int_or_float(&self) -> bool {
-        matches!(self, TScalar::Integer(_) | TScalar::Float(_) | TScalar::Number)
+        matches!(self, TScalar::Integer(_) | TScalar::Float(_))
     }
 
     /// Gets the value if this is a literal `int`.
@@ -466,7 +452,6 @@ impl TScalar {
     pub const fn is_boring(&self) -> bool {
         match self {
             TScalar::Numeric => true,
-            TScalar::Number => true,
             TScalar::ArrayKey => true,
             TScalar::Bool(bool_scalar) => bool_scalar.is_general(),
             TScalar::Integer(int_scalar) => int_scalar.is_unspecified(),
@@ -543,7 +528,6 @@ impl TType for TScalar {
             TScalar::ClassLikeString(t) => t.get_id(interner),
             TScalar::Integer(t) => t.get_id(interner),
             TScalar::Generic => "scalar".to_string(),
-            TScalar::Number => "num".to_string(),
             TScalar::ArrayKey => "array-key".to_string(),
             TScalar::Numeric => "numeric".to_string(),
         }

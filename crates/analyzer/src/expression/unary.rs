@@ -142,7 +142,8 @@ impl Analyzable for UnaryPrefix {
                                 }
                             },
                             _ => {
-                                resulting_types.push(TAtomic::Scalar(TScalar::num()));
+                                resulting_types.push(TAtomic::Scalar(TScalar::int()));
+                                resulting_types.push(TAtomic::Scalar(TScalar::float()));
                             }
                         },
                         TAtomic::GenericParameter(parameter) => {
@@ -157,7 +158,8 @@ impl Analyzable for UnaryPrefix {
                 }
 
                 if resulting_types.is_empty() {
-                    resulting_types.push(TAtomic::Scalar(TScalar::num()));
+                    resulting_types.push(TAtomic::Scalar(TScalar::int()));
+                    resulting_types.push(TAtomic::Scalar(TScalar::float()));
                 }
 
                 let resulting_type = TUnion::new(combine(resulting_types, context.codebase, context.interner, false));
@@ -411,7 +413,8 @@ fn increment_operand<'a>(
                                     value + 1.0
                                 })));
                             } else {
-                                possibilities.push(TAtomic::Scalar(TScalar::num()));
+                                possibilities.push(TAtomic::Scalar(TScalar::int()));
+                                possibilities.push(TAtomic::Scalar(TScalar::float()));
                             }
                         } else if let Some(incremented) = str_increment(string_val) {
                             possibilities.push(TAtomic::Scalar(TScalar::literal_string(incremented)));
@@ -443,7 +446,7 @@ fn increment_operand<'a>(
                     // Result is a generic string as the incremented class name is unknown.
                     possibilities.push(TAtomic::Scalar(TScalar::string()));
                 }
-                TScalar::Generic | TScalar::Number | TScalar::ArrayKey => {
+                TScalar::Generic | TScalar::ArrayKey => {
                     context.buffer.report(
                         TypingIssueKind::InvalidOperand,
                         Issue::warning(format!(
@@ -650,7 +653,8 @@ fn decrement_operand<'a>(
                                         value - 1.0
                                     })));
                                 } else {
-                                    possibilities.push(TAtomic::Scalar(TScalar::num()));
+                                    possibilities.push(TAtomic::Scalar(TScalar::int()));
+                                    possibilities.push(TAtomic::Scalar(TScalar::float()));
                                 }
                             }
                         } else {
@@ -676,7 +680,7 @@ fn decrement_operand<'a>(
                         // Result is a generic string as the incremented class name is unknown.
                         possibilities.push(TAtomic::Scalar(TScalar::string()));
                     }
-                    TScalar::Generic | TScalar::Number | TScalar::ArrayKey => {
+                    TScalar::Generic | TScalar::ArrayKey => {
                         context.buffer.report(
                             TypingIssueKind::InvalidOperand,
                             Issue::warning(format!(
@@ -1152,7 +1156,7 @@ fn cast_type_to_int(operand_type: &TUnion, context: &mut Context<'_>) -> TUnion 
             }
             TAtomic::Never => return get_never(),
             TAtomic::Scalar(scalar) => match scalar {
-                TScalar::Numeric | TScalar::Number | TScalar::ArrayKey => {
+                TScalar::Numeric | TScalar::ArrayKey => {
                     return get_int();
                 }
                 TScalar::Bool(bool_scalar) => match bool_scalar.value {
@@ -1283,7 +1287,7 @@ pub fn cast_type_to_string<'a>(
                         TAtomic::Scalar(TScalar::numeric_string())
                     }
                 }
-                TScalar::Number | TScalar::Numeric => TAtomic::Scalar(TScalar::numeric_string()),
+                TScalar::Numeric => TAtomic::Scalar(TScalar::numeric_string()),
                 TScalar::String(string) => TAtomic::Scalar(TScalar::String(string.clone())),
                 TScalar::ClassLikeString(class_string) => {
                     if let Some(value) = class_string.literal_value() {

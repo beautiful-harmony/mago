@@ -261,7 +261,7 @@ impl TUnion {
 
     pub fn has_int(&self) -> bool {
         for atomic in &self.types {
-            if atomic.is_int() || atomic.is_array_key() || atomic.is_numeric() || atomic.is_num() {
+            if atomic.is_int() || atomic.is_array_key() || atomic.is_numeric() {
                 return true;
             }
         }
@@ -637,8 +637,6 @@ impl TUnion {
                 flags |= HAS_STRING;
             } else if atomic.is_array_key() {
                 flags |= HAS_INT | HAS_STRING;
-            } else if atomic.is_num() {
-                flags |= HAS_INT | HAS_FLOAT;
             } else if atomic.is_numeric() {
                 // We don't add `string` as `numeric-string` does not contain `string` type
                 flags |= HAS_INT | HAS_FLOAT;

@@ -24,7 +24,6 @@ use mago_codex::ttype::get_arraykey;
 use mago_codex::ttype::get_bool;
 use mago_codex::ttype::get_false;
 use mago_codex::ttype::get_float;
-use mago_codex::ttype::get_int;
 use mago_codex::ttype::get_mixed;
 use mago_codex::ttype::get_mixed_any;
 use mago_codex::ttype::get_mixed_iterable;
@@ -33,7 +32,6 @@ use mago_codex::ttype::get_mixed_list;
 use mago_codex::ttype::get_mixed_maybe_from_loop;
 use mago_codex::ttype::get_never;
 use mago_codex::ttype::get_null;
-use mago_codex::ttype::get_num;
 use mago_codex::ttype::get_numeric;
 use mago_codex::ttype::get_object;
 use mago_codex::ttype::get_scalar;
@@ -132,7 +130,7 @@ pub(crate) fn reconcile(
             TAtomic::Scalar(TScalar::Float(float)) if float.is_general() => {
                 return intersect_simple!(
                     TAtomic::Scalar(TScalar::Float(float)) if float.is_general(),
-                    TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::Number),
+                    TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic),
                     context,
                     get_float(),
                     assertion,
@@ -215,17 +213,6 @@ pub(crate) fn reconcile(
             }
             TAtomic::Scalar(TScalar::ArrayKey) => {
                 return Some(intersect_arraykey(
-                    context,
-                    assertion,
-                    existing_var_type,
-                    key,
-                    negated,
-                    span,
-                    assertion.has_equality(),
-                ));
-            }
-            TAtomic::Scalar(TScalar::Number) => {
-                return Some(intersect_num(
                     context,
                     assertion,
                     existing_var_type,
@@ -915,56 +902,6 @@ fn intersect_arraykey(
     for atomic in &existing_var_type.types {
         if atomic.is_int() || atomic.is_any_string() || matches!(atomic, TAtomic::Scalar(TScalar::ArrayKey)) {
             acceptable_types.push(atomic.clone());
-        } else if matches!(atomic, TAtomic::Scalar(TScalar::Number)) {
-            return get_int();
-        } else {
-            did_remove_type = true;
-        }
-    }
-
-    if (acceptable_types.is_empty() || (!did_remove_type && !is_equality))
-        && let Some(key) = key
-        && let Some(span) = span
-    {
-        trigger_issue_for_impossible(
-            context,
-            &existing_var_type.get_id(Some(context.interner)),
-            key,
-            assertion,
-            !did_remove_type,
-            negated,
-            span,
-        );
-    }
-
-    if !acceptable_types.is_empty() {
-        return TUnion::new(acceptable_types);
-    }
-
-    get_never()
-}
-
-fn intersect_num(
-    context: &mut ReconcilationContext<'_>,
-    assertion: &Assertion,
-    existing_var_type: &TUnion,
-    key: Option<&String>,
-    negated: bool,
-    span: Option<&Span>,
-    is_equality: bool,
-) -> TUnion {
-    if existing_var_type.is_mixed() {
-        return get_num();
-    }
-
-    let mut acceptable_types = Vec::new();
-    let mut did_remove_type = false;
-
-    for atomic in &existing_var_type.types {
-        if atomic.is_int() || matches!(atomic, TAtomic::Scalar(TScalar::Float(_))) {
-            acceptable_types.push(atomic.clone());
-        } else if matches!(atomic, TAtomic::Scalar(TScalar::ArrayKey)) {
-            return get_int();
         } else {
             did_remove_type = true;
         }
@@ -1008,9 +945,6 @@ fn intersect_numeric(
         match atomic {
             TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) => {
                 return get_numeric();
-            }
-            TAtomic::Scalar(TScalar::Number) => {
-                acceptable_types.push(TAtomic::Scalar(TScalar::num()));
             }
             TAtomic::Scalar(TScalar::Float(float)) => {
                 acceptable_types.push(TAtomic::Scalar(TScalar::Float(*float)));
@@ -1229,10 +1163,7 @@ fn intersect_int(
             TAtomic::Scalar(TScalar::Integer(_)) => {
                 acceptable_types.push(TAtomic::Scalar(TScalar::Integer(*integer)));
             }
-            TAtomic::Mixed(_)
-            | TAtomic::Scalar(TScalar::Generic)
-            | TAtomic::Scalar(TScalar::Number)
-            | TAtomic::Scalar(TScalar::ArrayKey) => {
+            TAtomic::Mixed(_) | TAtomic::Scalar(TScalar::Generic) | TAtomic::Scalar(TScalar::ArrayKey) => {
                 return TUnion::new(vec![TAtomic::Scalar(TScalar::Integer(*integer))]);
             }
             TAtomic::GenericParameter(TGenericParameter { constraint, .. }) => {

@@ -84,13 +84,6 @@ impl TAtomic {
         }
     }
 
-    pub fn is_num(&self) -> bool {
-        match self {
-            TAtomic::Scalar(scalar) => scalar.is_num(),
-            _ => false,
-        }
-    }
-
     pub const fn is_mixed(&self) -> bool {
         matches!(self, TAtomic::Mixed(_))
     }
