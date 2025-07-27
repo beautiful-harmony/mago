@@ -921,10 +921,10 @@ impl<'a, 'i> Lexer<'a, 'i> {
 
                             self.token(TokenKind::CloseTag, buffer, start, end)
                         } else {
-                            return Some(Err(SyntaxError::UnexpectedToken(
+                            Some(Err(SyntaxError::UnexpectedToken(
                                 self.input.read(1)[0],
                                 self.input.current_position(),
-                            )));
+                            )))
                         }
                     }
                     _ => unreachable!(),

@@ -7,7 +7,8 @@ excludes = []
 
 [linter]
 default_plugins = false
-plugins = ["analysis"]
+plugins = ["doctrine-strict"]
+#plugins = ["analysis", "doctrine-strict"]
 # plugins = ["symfony", "laravel", "php-unit"]
 
 # This rule is disabled by default because it is experimental, enable it if you want to have a peek at it.
