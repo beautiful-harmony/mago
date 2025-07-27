@@ -30,4 +30,3 @@ strum = { workspace = true }
 indexmap = { workspace = true }
 ordered-float = { workspace = true }
 bitflags = { workspace = true }
-rayon = { workspace = true }
