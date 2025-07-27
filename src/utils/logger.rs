@@ -22,9 +22,9 @@ pub fn initialize_logger(directive: impl Into<Directive>, env_var: impl Into<Str
         .with_writer(LoggerWriter::stderr);
 
     if cfg!(debug_assertions) {
-        logger.with_target(cfg!(debug_assertions)).with_line_number(true).with_thread_names(true).init()
+        logger.with_target(true).with_thread_names(true).with_thread_names(true).init()
     } else {
-        logger.without_time().compact().init()
+        logger.without_time().with_target(false).with_thread_names(false).compact().init()
     }
 }
 

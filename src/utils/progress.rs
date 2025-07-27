@@ -31,7 +31,6 @@ pub fn create_progress_bar(length: usize, prefix: &'static str, theme: ProgressB
     );
 
     pb.set_prefix(prefix);
-
     pb
 }
 
@@ -48,6 +47,7 @@ pub fn remove_progress_bar(progress_bar: ProgressBar) {
 
 /// Represents different visual themes for the progress bar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u8)]
 pub enum ProgressBarTheme {
     Red,
     Yellow,
